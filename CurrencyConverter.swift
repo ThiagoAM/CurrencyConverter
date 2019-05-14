@@ -1,6 +1,5 @@
 //
 //  CurrencyConverter.swift
-//  Calculadora-Swift
 //
 //  Created by Thiago Martins on 26/03/19.
 //
