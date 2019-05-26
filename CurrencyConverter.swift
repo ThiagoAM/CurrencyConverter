@@ -1,6 +1,5 @@
 //
 //  CurrencyConverter.swift
-//
 //  Created by Thiago Martins on 26/03/19.
 //
 
@@ -26,11 +25,13 @@ enum Currency : String, CaseIterable {
     case ILS = "ILS"; case THB = "THB"
     
     // Public Static Methods:
+    /** Returns a currency name with it's flag (🇺🇸 USD, for example). */
     static func nameWithFlag(for currency : Currency) -> String {
         return (Currency.flagsByCurrencies[currency] ?? "?") + " " + currency.rawValue
     }
     
     // Public Properties:
+    /** Returns an array with all currency names and their respective flags. */
     static let allNamesWithFlags : [String] = {
         var namesWithFlags : [String] = []
         for currency in Currency.allCases {
@@ -66,22 +67,30 @@ class CurrencyConverter {
     private let xmlParser = CurrencyXMLParser()
     
     // Initialization:
-    init() {
-        updateExchangeRates {}
-    }
+    init() { updateExchangeRates {} }
     
     // Public Methods:
+    /** Updates the exchange rate and runs the completion afterwards. */
     public func updateExchangeRates(completion : @escaping () -> Void = {}) {
         xmlParser.parse(completion: {
+            // Gets the exchange rate from the internet:
             self.exchangeRates = self.xmlParser.getExchangeRates()
+            // Saves the updated exchange rate to the device's local storage:
             CurrencyConverterLocalData.saveMostRecentExchangeRates(self.exchangeRates)
+            // Runs the completion:
             completion()
         }, errorCompletion: { // No internet access/network error:
+            // Loads the most recent exchange rate from the device's local storage:
             self.exchangeRates = CurrencyConverterLocalData.loadMostRecentExchangeRates()
+            // Runs the completion:
             completion()
         })
     }
     
+    /**
+     Converts a Double value based on it's currency (valueCurrency) and the output currency (outputCurrency).
+     USD to EUR conversion example: convert(42, valueCurrency: .USD, outputCurrency: .EUR)
+     */
     public func convert(_ value : Double, valueCurrency : Currency, outputCurrency : Currency) -> Double? {
         guard let valueRate = exchangeRates[valueCurrency] else { return nil }
         guard let outputRate = exchangeRates[outputCurrency] else { return nil }
@@ -89,16 +98,24 @@ class CurrencyConverter {
         return value * multiplier
     }
     
-    public func convertAndFormat(_ value : Double, valueCurrency : Currency, outputCurrency : Currency, decimalPlaces : Int) -> String? {
+    /**
+     Converts a Double value based on it's currency and the output currency, and returns a formatted String.
+     Usage example: convertAndFormat(42, valueCurrency: .USD, outputCurrency: .EUR, numberStyle: .currency, decimalPlaces: 4)
+     */
+    public func convertAndFormat(_ value : Double, valueCurrency : Currency, outputCurrency : Currency, numberStyle : NumberFormatter.Style, decimalPlaces : Int) -> String? {
         guard let doubleOutput = convert(value, valueCurrency: valueCurrency, outputCurrency: outputCurrency) else {
             return nil
         }
-        return format(doubleOutput, decimalPlaces: decimalPlaces)
+        return format(doubleOutput, numberStyle: numberStyle, decimalPlaces: decimalPlaces)
     }
     
-    public func format(_ value : Double, decimalPlaces : Int) -> String? {
+    /**
+     Returns a formatted string from a double value.
+     Usage example: format(42, numberStyle: .currency, decimalPlaces: 4)
+     */
+    public func format(_ value : Double, numberStyle : NumberFormatter.Style, decimalPlaces : Int) -> String? {
         let formatter = NumberFormatter()
-        formatter.numberStyle = NumberFormatter.Style.decimal
+        formatter.numberStyle = numberStyle
         formatter.maximumFractionDigits = decimalPlaces
         return formatter.string(from: NSNumber(value: value))
     }
@@ -167,9 +184,9 @@ private class CurrencyConverterLocalData {
     }
     
     // Static Properties:
+    // • This will never be used once the method CurrencyConverter.updateExchangeRates is called with internet access.
+    // • This is just an emergency callback, in case the user doesn't have internet access the first time running the app.
     // Updated in: 04/15/2019.
-    // ps: Only used if the method CurrencyConverter.updateExchangeRates() was
-    // never called with internet access.
     static let fallBackExchangeRates : [Currency : Double] = [
         .USD : 1.1321,
         .JPY : 126.76,
@@ -206,11 +223,13 @@ private class CurrencyConverterLocalData {
     ]
     
     // Static Methods:
+    /** Saves the most recent exchange rates by locally storing it. */
     static func saveMostRecentExchangeRates(_ exchangeRates : [Currency : Double]) {
         let convertedExchangeRates = convertExchangeRatesForUserDefaults(exchangeRates)
         UserDefaults.standard.set(convertedExchangeRates, forKey: Keys.mostRecentExchangeRates)
     }
     
+    /** Loads the most recent exchange rates from the local storage. */
     static func loadMostRecentExchangeRates() -> [Currency : Double] {
         if let userDefaultsExchangeRates = UserDefaults.standard.dictionary(forKey: Keys.mostRecentExchangeRates) as? [String : Double] {
             return convertExchangeRatesFromUserDefaults(userDefaultsExchangeRates)
@@ -221,6 +240,7 @@ private class CurrencyConverterLocalData {
     }
     
     // Private Static Methods:
+    /** Converts the [String : Double] dictionary with the exchange rates to a [Currency : Double] dictionary. */
     private static func convertExchangeRatesFromUserDefaults(_ userDefaultsExchangeRates : [String : Double]) -> [Currency : Double] {
         var exchangeRates : [Currency : Double] = [:]
         for userDefaultExchangeRate in userDefaultsExchangeRates {
@@ -231,6 +251,9 @@ private class CurrencyConverterLocalData {
         return exchangeRates
     }
     
+    /**
+     Converts the [Currency : Double] dictionary with the exchange rates to a [String : Double] one so it can be stored locally.
+     */
     private static func convertExchangeRatesForUserDefaults(_ exchangeRates : [Currency : Double]) -> [String : Double] {
         var userDefaultsExchangeRates : [String : Double] = [:]
         for exchangeRate in exchangeRates {
