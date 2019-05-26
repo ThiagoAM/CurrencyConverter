@@ -1,5 +1,7 @@
 # CurrencyConverter (Swift 5.0)
-A simple currency converter written in Swift 5 that gets the exchange rates from the European Central Bank.
+A simple currency converter written in Swift 5.<br/>
+The exchange rates are fetched from the following XML file: https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml<br/>
+This Currency Converter is used in the Objective Calculator app. Check it out: http://itunes.apple.com/app/id1287000522<br/>
 
 **How to use:** <br />
 • Add the "CurrencyConverter.swift" file to your project <br />
